@@ -1,11 +1,96 @@
 import spotipy
-import tkinter
+from tkinter import *
 import config
 import pymongo
 
 #// TODO Try to plug it with MongoDB and rechack data structure
 # TODO Create GUI, try to read existing data from db and show at GUI boxes
 # TODO Focus on array data, eg artist in festival, how to read all
+
+
+
+########### GUI ###################
+
+app = Tk()
+app.title('MongoDB')
+app.geometry('900x700')
+app.resizable(0,0)
+
+#### Festival List BOX ####
+
+festival_box = LabelFrame(app, text= 'Festival', bd=1, relief= GROOVE, labelanchor= 'n')
+festival_box.grid(row= 0, column=0)
+scrollbar = Scrollbar(festival_box, orient= 'vertical')
+festival_list = Listbox(festival_box, height=15, width=30, yscrollcommand=scrollbar.set)
+festival_list.grid(row= 0, column= 0, padx= 50, pady= 30)
+scrollbar.config(command= festival_list.yview)
+scrollbar.grid(row= 0, column= 1)
+
+
+# Artist List Box
+
+artist_box = LabelFrame(app, text= 'Artist', bd=1, labelanchor= 'n')
+artist_box.grid(row= 0, column=1)
+scrollbar_artist = Scrollbar(artist_box, orient= 'vertical')
+artist_list = Listbox(artist_box, height=15, width=30, yscrollcommand=scrollbar_artist.set)
+artist_list.grid(row= 0, column= 1, padx= 50, pady= 30)
+scrollbar_artist.config(command= artist_list.yview)
+scrollbar_artist.grid(row= 0, column= 2)
+
+
+# Track List Box
+
+track_box = LabelFrame(app, text= 'Track', bd=1, labelanchor= 'n')
+track_box.grid(row= 0, column=2)
+scrollbar_track = Scrollbar(track_box, orient= 'vertical')
+track_list = Listbox(track_box, height=15, width=30, yscrollcommand=scrollbar_track.set)
+track_list.grid(row= 0, column= 2, padx= 50, pady= 30)
+scrollbar_track.config(command= track_list.yview)
+scrollbar_track.grid(row= 0, column= 3)
+
+
+# Festival to plot list box
+plotting_box = LabelFrame(app, text= 'Selecting festival to plot', bd= 1, labelanchor= 'n')
+plotting_box.grid(row= 1, column= 0, columnspan= 2, padx= 20, pady= 40)
+scrollbar_plotting = Scrollbar(plotting_box, orient= 'vertical')
+plotting_list = Listbox(plotting_box, height= 15, width= 60, yscrollcommand= scrollbar_plotting.set)
+plotting_list.grid(row= 1, column=0, padx= 50, pady= 30)
+scrollbar_plotting.config(command= plotting_list.yview)
+scrollbar_plotting.grid(row=1, column= 1)
+# colspan=3
+
+
+
+#### Button ####
+# Festival add delete button
+
+# Artist Add Del Button
+
+
+
+#### Check box for plotting festival
+
+
+# Plot button
+btn_plot = Button(app, text= 'Plot', command= '', width= 10, height=3)
+btn_plot.grid(row= 1, column= 2)
+app.mainloop()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class FetchSpoty():
     
@@ -223,7 +308,7 @@ class MongoConnect():
     # def db_read_all_at_start():
     #     return
 
-if __name__ == '__main__':
+if __name__ == '__main__2':
     """
     เมื่อ cursor จิ้มที่ festival ไหน ให้ไป read DJ ในส่วนนั้น
     เช่นกันกับ DJ เมื่อจิ้มอันไหน ให้แสดงรายชื่อเพลง
@@ -271,15 +356,3 @@ if __name__ == '__main__':
     # pprint(features)
     # pprint(features[0])        
     # pprint(features[0][0])        
-# a = 10
-# isinstance(a, )
-
-# name = 'kimtee'
-
-# dct = {'name': name}
-# lst = []
-
-# lst.append(dct)
-# dct = {'name': 'kimtee2'}
-# lst.append(dct)
-# lst
