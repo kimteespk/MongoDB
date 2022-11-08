@@ -4,92 +4,13 @@ import config
 import pymongo
 
 #// TODO Try to plug it with MongoDB and rechack data structure
-# TODO Create GUI, try to read existing data from db and show at GUI boxes
+#// TODO Create GUI, 
+#// TODO try to read existing data from db and show at GUI boxes
+# TODO Function Add button which insert to GUI and Add to DB
+# TODO READ Each DJ in festival when cursored at festival (fetch_data_cursor_select())
+# เมื่อเปิดโปรแกรม ให้ read db['festival'] มาให้หมดเลย เลย insert เข้า festival
+# ทุกครั้งที่มีการคลิก add หรือ delete ในช่องไหน ให้ มันเรียก function จัดการใน DB เลย
 # TODO Focus on array data, eg artist in festival, how to read all
-
-
-
-########### GUI ###################
-
-app = Tk()
-app.title('MongoDB')
-app.geometry('900x700')
-app.resizable(0,0)
-
-#### Festival List BOX ####
-
-festival_box = LabelFrame(app, text= 'Festival', bd=1, relief= GROOVE, labelanchor= 'n')
-festival_box.grid(row= 0, column=0)
-scrollbar = Scrollbar(festival_box, orient= 'vertical')
-festival_list = Listbox(festival_box, height=15, width=30, yscrollcommand=scrollbar.set)
-festival_list.grid(row= 0, column= 0, padx= 50, pady= 30)
-scrollbar.config(command= festival_list.yview)
-scrollbar.grid(row= 0, column= 1)
-
-
-# Artist List Box
-
-artist_box = LabelFrame(app, text= 'Artist', bd=1, labelanchor= 'n')
-artist_box.grid(row= 0, column=1)
-scrollbar_artist = Scrollbar(artist_box, orient= 'vertical')
-artist_list = Listbox(artist_box, height=15, width=30, yscrollcommand=scrollbar_artist.set)
-artist_list.grid(row= 0, column= 1, padx= 50, pady= 30)
-scrollbar_artist.config(command= artist_list.yview)
-scrollbar_artist.grid(row= 0, column= 2)
-
-
-# Track List Box
-
-track_box = LabelFrame(app, text= 'Track', bd=1, labelanchor= 'n')
-track_box.grid(row= 0, column=2)
-scrollbar_track = Scrollbar(track_box, orient= 'vertical')
-track_list = Listbox(track_box, height=15, width=30, yscrollcommand=scrollbar_track.set)
-track_list.grid(row= 0, column= 2, padx= 50, pady= 30)
-scrollbar_track.config(command= track_list.yview)
-scrollbar_track.grid(row= 0, column= 3)
-
-
-# Festival to plot list box
-plotting_box = LabelFrame(app, text= 'Selecting festival to plot', bd= 1, labelanchor= 'n')
-plotting_box.grid(row= 1, column= 0, columnspan= 2, padx= 20, pady= 40)
-scrollbar_plotting = Scrollbar(plotting_box, orient= 'vertical')
-plotting_list = Listbox(plotting_box, height= 15, width= 60, yscrollcommand= scrollbar_plotting.set)
-plotting_list.grid(row= 1, column=0, padx= 50, pady= 30)
-scrollbar_plotting.config(command= plotting_list.yview)
-scrollbar_plotting.grid(row=1, column= 1)
-# colspan=3
-
-
-
-#### Button ####
-# Festival add delete button
-
-# Artist Add Del Button
-
-
-
-#### Check box for plotting festival
-
-
-# Plot button
-btn_plot = Button(app, text= 'Plot', command= '', width= 10, height=3)
-btn_plot.grid(row= 1, column= 2)
-app.mainloop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class FetchSpoty():
@@ -269,19 +190,22 @@ class MongoConnect():
     
     def db_add(self, col: str, doc: list):
         
-        db_id = self.collection_params[col].insert_many(doc)
+        if isinstance(doc, list):
+            db_id = self.collection_params[col].insert_many(doc)
+        else:
+            db_id = self.collection_params[col].insert_one(doc)
         
         return db_id
     
     
     def db_del(self, col, query: list):
         
-        if isinstance(query) == list:
+        if isinstance(query, list):
             for i in range(len(query)):
                 db_id = self.collection_params[col].delete_one(query[i])
         else:
             db_id = self.collection_params[col].delete_one(query)
-            
+        print(db_id)
         return db_id
     
     # called when change dj uri
@@ -296,8 +220,15 @@ class MongoConnect():
         return db_id
     
     # used when open program to show all festivals in database
-    def db_read_all(self, col, ):
-        return
+    def db_read_all(self, col):
+        #data = [x for x in self.collection_params[col].find()]
+        data = []
+        for d in self.collection_params[col].find():
+            data.append(d)
+        print(data)
+        print('Data keys :', data[0].keys())
+        
+        return data
     
     # read all use in case to show all djs, all tracks feature
     # when festival was selected
@@ -307,6 +238,157 @@ class MongoConnect():
     # # read all data in each collection 
     # def db_read_all_at_start():
     #     return
+
+
+
+########### GUI ###################
+
+app = Tk()
+app.title('MongoDB')
+app.geometry('900x700')
+app.resizable(0,0)
+
+#### Festival List BOX ####
+
+festival_box = LabelFrame(app, text= 'Festival', bd=1, relief= GROOVE, labelanchor= 'n')
+festival_box.grid(row= 0, column=0)
+scrollbar = Scrollbar(festival_box, orient= 'vertical')
+festival_list = Listbox(festival_box, height=15, width=30, yscrollcommand=scrollbar.set)
+festival_list.grid(row= 0, column= 0, padx= 50, pady= 30)
+scrollbar.config(command= festival_list.yview)
+scrollbar.grid(row= 0, column= 1)
+
+
+# Artist List Box
+
+artist_box = LabelFrame(app, text= 'Artist', bd=1, labelanchor= 'n')
+artist_box.grid(row= 0, column=1)
+scrollbar_artist = Scrollbar(artist_box, orient= 'vertical')
+artist_list = Listbox(artist_box, height=15, width=30, yscrollcommand=scrollbar_artist.set)
+artist_list.grid(row= 0, column= 1, padx= 50, pady= 30)
+scrollbar_artist.config(command= artist_list.yview)
+scrollbar_artist.grid(row= 0, column= 2)
+
+
+# Track List Box
+
+track_box = LabelFrame(app, text= 'Track', bd=1, labelanchor= 'n')
+track_box.grid(row= 0, column=2)
+scrollbar_track = Scrollbar(track_box, orient= 'vertical')
+track_list = Listbox(track_box, height=15, width=30, yscrollcommand=scrollbar_track.set)
+track_list.grid(row= 0, column= 2, padx= 50, pady= 30)
+scrollbar_track.config(command= track_list.yview)
+scrollbar_track.grid(row= 0, column= 3)
+
+
+# Festival to plot list box
+plotting_box = LabelFrame(app, text= 'Select festival to plot', bd= 1, labelanchor= 'n')
+plotting_box.grid(row= 1, column= 0, columnspan= 2, padx= 20, pady= 40)
+scrollbar_plotting = Scrollbar(plotting_box, orient= 'vertical')
+plotting_list = Listbox(plotting_box, height= 15, width= 60, yscrollcommand= scrollbar_plotting.set)
+plotting_list.grid(row= 1, column=0, padx= 50, pady= 30)
+scrollbar_plotting.config(command= plotting_list.yview)
+scrollbar_plotting.grid(row=1, column= 1)
+# colspan=3
+
+#! #### DUMMY #####
+artist_list.insert(0, 'test artist box')
+artist_list.insert(-1, 'test artist box2') # ใช้ - 1 ไม่ได้
+artist_list.insert(0, 'test artist box3')
+artist_list.delete(0) # delete item in list box at index = 0
+#a = artist_list.get(0) # get 0 บนสุด (ซึ่งหมายถึง index)
+
+# ! END DUMMY
+
+#### Button ####
+# Festival add delete button
+btn_add_fes = Button(festival_box, text= 'Add', command=)
+btn_add_fes.grid(row= 1, column=0)
+
+btn_del_fes = Button(festival_box, text= 'Delete', command= lambda: del_click(festival_list, col= 'festival'))
+btn_del_fes.grid(row= 1, column=1)
+
+
+# Artist Add Del Button
+btn_add_artist = Button(artist_box, text= 'Add')
+btn_add_artist.grid(row= 1, column=1)
+
+btn_del_artist = Button(artist_box, text= 'Delete', command= lambda: del_click(artist_list, col= 'artist'))
+btn_del_artist.grid(row= 1, column=2)
+
+
+#### Check box for plotting festival
+
+def plot_click(lst_box, data):
+    lst_box.insert(0, data)
+    return
+
+def add_click(lst_box):   # lst_box depend on which button clicked
+    # show new window to get input for each values
+    
+    # get value from each input
+    add_confirm(lst_box, )
+    return
+
+def add_confirm(lst_box, data):
+    
+    # insert data to list box
+    # and save to db call create db function here
+    return
+
+def del_click(lst_box, col: str):
+    # lst_box = variable of list box, 
+    # col = string from where button is clicked that will be param for db_collection
+    
+    # get name from curselection that will be used as query to delete at db
+    name = lst_box.get(lst_box.curselection()) # get value where cursor select
+    print(name)
+    lst_box.delete(lst_box.curselection()) # delete item in listbox
+    
+    # delete in db 
+    #MongoConnect.db_del(col, query= {'name': name })
+    mongo_plug.db_del(col, query= {'name': name})
+    # use mongo var instead
+    # notif text when delete complete or not found
+    return
+
+
+def fetch_data_at_open(col, lst_box, what_key: str):
+    # fetch all festival data base and insert to festival_list_box
+    data = mongo_plug.db_read_all(col)
+    try:
+        for i in data:
+            lst_box.insert(0, i[what_key])
+        return True
+    except:
+        return False
+
+    return
+
+def fetch_data_cursor_select(col, parent_lst_box): 
+        
+    return
+
+
+# Plot button
+btn_plot = Button(app, text= 'Plot', command= lambda: plot_click(festival_list, 'test button insert to fes'), width= 10, height=3)
+btn_plot.grid(row= 1, column= 2)
+
+
+
+###### Init process
+# connoect mongo
+mongo_plug = MongoConnect(config.mongodb_url, pwd= config.mongo_pwd)
+a = artist_list.get(1) # get 0 บนสุด
+fetch_data_at_open('festival', festival_list, 'name')
+
+
+
+app.mainloop()
+
+
+
+
 
 if __name__ == '__main__2':
     """
