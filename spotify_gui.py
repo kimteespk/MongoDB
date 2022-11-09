@@ -6,7 +6,10 @@ import pymongo
 #// TODO Try to plug it with MongoDB and rechack data structure
 #// TODO Create GUI, 
 #// TODO try to read existing data from db and show at GUI boxes
-# TODO Function Add button which insert to GUI and Add to DB
+#// TODO Function Add button which insert to GUI and Add to DB (festival and artist need to separete function?)
+# ? Change Database class to be an treasholder to get values for each keys ???????????
+# TODO ADD artist buttun and function
+
 # TODO READ Each DJ in festival when cursored at festival (fetch_data_cursor_select())
 # เมื่อเปิดโปรแกรม ให้ read db['festival'] มาให้หมดเลย เลย insert เข้า festival
 # ทุกครั้งที่มีการคลิก add หรือ delete ในช่องไหน ให้ มันเรียก function จัดการใน DB เลย
@@ -219,6 +222,16 @@ class MongoConnect():
         
         return db_id
     
+    def db_add_dj_to_fes_array(self, doc: dict, fes_name ,col= 'festival'):
+        
+        db_id = self.collection_params[col].update_one(
+            {'name': fes_name},
+            {'$push': {'artist': doc}}
+        )
+        
+        return db_id
+        
+    
     # used when open program to show all festivals in database
     def db_read_all(self, col):
         #data = [x for x in self.collection_params[col].find()]
@@ -302,7 +315,7 @@ artist_list.delete(0) # delete item in list box at index = 0
 
 #### Button ####
 # Festival add delete button
-btn_add_fes = Button(festival_box, text= 'Add', command=)
+btn_add_fes = Button(festival_box, text= 'Add', command= lambda: add_fes_click(festival_list))
 btn_add_fes.grid(row= 1, column=0)
 
 btn_del_fes = Button(festival_box, text= 'Delete', command= lambda: del_click(festival_list, col= 'festival'))
@@ -323,18 +336,73 @@ def plot_click(lst_box, data):
     lst_box.insert(0, data)
     return
 
-def add_click(lst_box):   # lst_box depend on which button clicked
+# ! 2 functions ข้างล่าง ยังแปลกๆ ไปคิดใหม่ หรือแยกฟังค์ชันไปเลย
+def add_fes_click(lst_box):   # lst_box depend on which button clicked
+    
+    # vars
+    temp_name = StringVar()
+    temp_year = IntVar()
+    
+    
     # show new window to get input for each values
+    add_fes_screen = Toplevel(app)
+    add_fes_screen.title('Adding festival to database')
+    
+    # Add label
+    Label(add_fes_screen, text= 'Enter new festival name to add new festival').grid(row=0, sticky=N, pady=10)
+    Label(add_fes_screen, text= 'Name').grid(row=1, sticky=W, pady=10)
+    Label(add_fes_screen, text= 'Year').grid(row=2, sticky=W, pady=10)
+    
+    # Add Entry
+    Entry(add_fes_screen, textvariable= temp_name).grid(row=1, column=0)
+    Entry(add_fes_screen, textvariable= temp_year).grid(row=2, column=0)
+    
+    # notif
+    notif = Label(add_fes_screen)
+    notif.grid(row=4, sticky=N, pady=10)
+    
+    add_confirm = Button(add_fes_screen, text= 'Comfirm', command= lambda :add_fes_confirm(lst_box, temp_name, temp_year, add_fes_screen, notif)).grid(row=3, sticky=N, pady=10)
+    
     
     # get value from each input
-    add_confirm(lst_box, )
+    # if lst_box == festival_list:
+    #add_confirm(lst_box, data, festival_name)
+
     return
 
-def add_confirm(lst_box, data):
+def add_fes_confirm(lst_box, temp_name, temp_year, screen, notif):
     
-    # insert data to list box
+    #// TODO ADD array to data value for artist
+    data = {'name': temp_name.get(), 'year' :temp_year.get(), 'artist' : []}
+    # insert data(name) to list box
+    lst_box.insert(0, data['name'])
     # and save to db call create db function here
+    
+    # add new festival
+    mongo_plug.db_add('festival', data) #<<< add dj
+
+    # notif
+    #notif.config(fg='green', text= 'Add to database complete')
+    
+    # destroy toplevel window
+    screen.destroy()
+    return True
+
+def add_artist_click(lst_box, artist_name= ''):
+    
+    data = {'url': '', 'name': artist_name}
+    #
     return
+
+def add_artist_comfirm(lst):
+    
+    # add data to db
+    # if lst_box == festival_list:
+        # mongo_plug.db_add_dj_to_fes_array(data, fes_name= festival_name) #<<< add dj
+    # insert data(name) to list box
+
+    return
+
 
 def del_click(lst_box, col: str):
     # lst_box = variable of list box, 
@@ -358,7 +426,7 @@ def fetch_data_at_open(col, lst_box, what_key: str):
     data = mongo_plug.db_read_all(col)
     try:
         for i in data:
-            lst_box.insert(0, i[what_key])
+            lst_box.insert(0, i[what_key]) # TODO ['year']
         return True
     except:
         return False
