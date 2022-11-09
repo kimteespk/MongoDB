@@ -2,18 +2,30 @@ import spotipy
 from tkinter import *
 import config
 import pymongo
+from pprint import pprint
 
 #// TODO Try to plug it with MongoDB and rechack data structure
 #// TODO Create GUI, 
 #// TODO try to read existing data from db and show at GUI boxes
 #// TODO Function Add button which insert to GUI and Add to DB (festival and artist need to separete function?)
-# ? Change Database class to be an treasholder to get values for each keys ???????????
-# TODO ADD artist buttun and function
+# // Done ? Change Database class to be an treasholder to get values for each keys ???????????
+#// ! artist dup
+#// TODO Database design change????? how?
+# Festival{'name': , year, 'artist'}
+# Artist{uri, name, track[features]} NONEED TRACK COLLECTION
 
+#// ? Artist arrtibutes, only uri and get name by fetching, or input both name and uri
+#// ? 1 merge track collection to be an array in artist collection
+#// TODO ADD artist buttun and function
+    #// TODO get artist name function
+    #// TODO Remove Artist key frin track array object, 
+    # TODO Get current cursor () return turn name 
+# TODO Recheck fetch features function is it return as list >> then call it at artist_confirm button
 # TODO READ Each DJ in festival when cursored at festival (fetch_data_cursor_select())
-# เมื่อเปิดโปรแกรม ให้ read db['festival'] มาให้หมดเลย เลย insert เข้า festival
-# ทุกครั้งที่มีการคลิก add หรือ delete ในช่องไหน ให้ มันเรียก function จัดการใน DB เลย
-# TODO Focus on array data, eg artist in festival, how to read all
+# TODO Add festival list to lower list box 
+# TODO Filter and plot
+
+# * Focus on array data, eg artist in festival, how to read all
 
 
 class FetchSpoty():
@@ -32,43 +44,44 @@ class FetchSpoty():
              self.sp = spotipy.Spotify()
         
         self.required_features = ['danceability', 'energy', 'loudness', 'speechiness', 'acousticness', 'instrumentalness',
-                     'liveness', 'valence', 'tempo', 'uri']
+                     'liveness', 'valence', 'tempo']#, 'uri']
         
         
-    #def search_artist
-    def fetch_features(self, track_uri) -> list: # maybe return a dict
+    def fetch_features(self, track_uri) -> dict:
         
         self.track_featres = self.sp.audio_features(track_uri)[0]
-        #// TODO restructure to list of track_features
-        song_features = {}
-        self.track_feature_list = []
+        self.song_features = {}
         
         for i in self.required_features:
-            song_features[i] = self.track_featres[i]
+            self.song_features[i] = self.track_featres[i]
             
-        self.track_feature_list.append(song_features.copy())
+        #self.track_feature_list.append(song_features.copy())
         
-        # TODO Handling of track usi come as a list, loop throgh list and append all features to return
-        # ! This return in list, why dont just ret as a dict
-        return self.track_feature_list
+        return self.song_features.copy()
         
         
             
-    def fetch_artist_tracks(self, artist_uri):
+    def fetch_artist_tracks(self, artist_uri, get_features= bool):
+        
+        # get artist name and details
+        self.artist_details = self.sp.artist(artist_uri)
+        self.artist_name = self.artist_details['name']
+        self.popularity = self.artist_details['popularity']
         
         # artist_top_tracks return dict with key is 'tracks', which contain list of 10 tracks
         self.top_tracks_list = []
         artist_tracks = self.sp.artist_top_tracks(artist_id= artist_uri, country= 'TH')['tracks']
-        #// TODO Restrucre artist_tracks data (above this)
-        print(artist_tracks)
-        print(type(artist_tracks))
+        #print(artist_tracks)
+        #print(type(artist_tracks))
         for i, k in enumerate(artist_tracks):
             top_tracks = {}
-            top_tracks['artist'] = artist_tracks[i]['artists'][0]['name']
+            #top_tracks['artist'] = artist_tracks[i]['artists'][0]['name']
             top_tracks['uri'] = artist_tracks[i]['uri']
-            
+            if get_features:
+                top_tracks['features'] = self.fetch_features(top_tracks['uri'])
             self.top_tracks_list.append(top_tracks.copy())
-        
+            
+            # ! มันผิดเพราะบางทีคนร้องขชื่อแรกไม่ใช่
             
         
         return self.top_tracks_list
@@ -200,6 +213,34 @@ class MongoConnect():
         
         return db_id
     
+    def db_add_festival(self, name, year, col= 'festival'):
+        
+        doc = {'name': name, 'year': year, 'artist': []}
+        db_id = self.collection_params[col].insert_one(doc)
+        
+        return
+    
+    
+    def db_add_artist(self, artist_name, artist_uri, popularity , fes_name, track: list, col1= 'artist', col2= 'festival'): 
+        
+        # add new artist
+        artist_doc = {'name': artist_name, 'uri': artist_uri, 'popularity': popularity, 'track': track}
+        artist_ret = self.collection_params[col1].insert_one(artist_doc)
+        artist_id = artist_ret.inserted_id
+        print('-------------')
+        print('ID :',artist_id)
+        print(type(artist_id))
+            
+        
+        # push artist id to festival
+        festival_doc = {'name': artist_name, 'ref_id': artist_id}
+        db_id = self.collection_params[col2].update_one(
+            {'name': fes_name},
+            {'$push': {'artist': festival_doc}}
+        )
+        
+        return db_id
+        
     
     def db_del(self, col, query: list):
         
@@ -222,15 +263,6 @@ class MongoConnect():
         
         return db_id
     
-    def db_add_dj_to_fes_array(self, doc: dict, fes_name ,col= 'festival'):
-        
-        db_id = self.collection_params[col].update_one(
-            {'name': fes_name},
-            {'$push': {'artist': doc}}
-        )
-        
-        return db_id
-        
     
     # used when open program to show all festivals in database
     def db_read_all(self, col):
@@ -323,7 +355,7 @@ btn_del_fes.grid(row= 1, column=1)
 
 
 # Artist Add Del Button
-btn_add_artist = Button(artist_box, text= 'Add')
+btn_add_artist = Button(artist_box, text= 'Add', command= lambda: add_artist_click(artist_list))
 btn_add_artist.grid(row= 1, column=1)
 
 btn_del_artist = Button(artist_box, text= 'Delete', command= lambda: del_click(artist_list, col= 'artist'))
@@ -336,7 +368,7 @@ def plot_click(lst_box, data):
     lst_box.insert(0, data)
     return
 
-# ! 2 functions ข้างล่าง ยังแปลกๆ ไปคิดใหม่ หรือแยกฟังค์ชันไปเลย
+#// ! 2 functions ข้างล่าง ยังแปลกๆ ไปคิดใหม่ หรือแยกฟังค์ชันไปเลย
 def add_fes_click(lst_box):   # lst_box depend on which button clicked
     
     # vars
@@ -361,7 +393,7 @@ def add_fes_click(lst_box):   # lst_box depend on which button clicked
     notif = Label(add_fes_screen)
     notif.grid(row=4, sticky=N, pady=10)
     
-    add_confirm = Button(add_fes_screen, text= 'Comfirm', command= lambda :add_fes_confirm(lst_box, temp_name, temp_year, add_fes_screen, notif)).grid(row=3, sticky=N, pady=10)
+    Button(add_fes_screen, text= 'Comfirm', command= lambda :add_fes_confirm(lst_box, temp_name, temp_year, add_fes_screen, notif)).grid(row=3, sticky=N, pady=10)
     
     
     # get value from each input
@@ -373,13 +405,14 @@ def add_fes_click(lst_box):   # lst_box depend on which button clicked
 def add_fes_confirm(lst_box, temp_name, temp_year, screen, notif):
     
     #// TODO ADD array to data value for artist
-    data = {'name': temp_name.get(), 'year' :temp_year.get(), 'artist' : []}
+    name = temp_name.get()
+    year = temp_year.get()
+    
     # insert data(name) to list box
-    lst_box.insert(0, data['name'])
-    # and save to db call create db function here
+    lst_box.insert(0, ('{}, {}'.format(name, year)))
     
     # add new festival
-    mongo_plug.db_add('festival', data) #<<< add dj
+    mongo_plug.db_add_festival(name, year) #<<< add dj new treshold
 
     # notif
     #notif.config(fg='green', text= 'Add to database complete')
@@ -388,19 +421,61 @@ def add_fes_confirm(lst_box, temp_name, temp_year, screen, notif):
     screen.destroy()
     return True
 
-def add_artist_click(lst_box, artist_name= ''):
+def add_artist_click(lst_box):
+        # vars
+    temp_name = StringVar()
+    temp_uri = StringVar()
     
-    data = {'url': '', 'name': artist_name}
-    #
+    
+    # show new window to get input for each values
+    add_artist_screen = Toplevel(app)
+    add_artist_screen.title('Adding artist to database')
+    
+    #// TODO Artist add button
+    # ? จะเก็บแค่ Artist Uri หรือเก็บ Name ด้วย ถ้า getname ต้องไปเขียน function ในspoty
+    # Add label
+    Label(add_artist_screen, text= 'Enter new artist name to for selected festival').grid(row=0, sticky=N, pady=10)
+    Label(add_artist_screen, text= 'Name').grid(row=1, sticky=W, pady=10)
+    Label(add_artist_screen, text= 'Uri').grid(row=2, sticky=W, pady=10)
+    
+    # Add Entry
+    Entry(add_artist_screen, textvariable= temp_name).grid(row=1, column=0)
+    Entry(add_artist_screen, textvariable= temp_uri).grid(row=2, column=0)
+    
+    # notif
+    notif = Label(add_artist_screen)
+    notif.grid(row=4, sticky=N, pady=10)
+    
+    
+    Button(add_artist_screen, text= 'Comfirm and Fetch Audio Features',
+           command= lambda :add_artist_comfirm(lst_box, temp_name, temp_uri, add_artist_screen, notif)).grid(row=3, sticky=N, pady=10)
+
     return
 
-def add_artist_comfirm(lst):
+def add_artist_comfirm(lst_box, temp_name, temp_uri, screen, notif):
+    #TODO Get festivalname from cursorselect > return index and find by index
     
+    #name = temp_name.get()
+    uri = temp_uri.get()
+    # GET FESTIVALNAME by cursor
+    # ! DUMMY
+    fes_name = 'newfes5'
+    
+    
+    # fetch artist tracks
+    tracks = sp.fetch_artist_tracks(uri, get_features= True)
+    pprint(tracks)
+    name = sp.artist_name # get name from spotify
+    pprint(name)
     # add data to db
-    # if lst_box == festival_list:
-        # mongo_plug.db_add_dj_to_fes_array(data, fes_name= festival_name) #<<< add dj
-    # insert data(name) to list box
-
+    mongo_plug.db_add_artist(name, uri, sp.popularity, fes_name, tracks)
+    
+    # ? insert ยังไงดี จะให้เป็นเมาส์คลิ้ก แล้วถึงโชว์ข้อมูล
+    #lst_box.insert(name)
+    
+    # fetch_feature and append to db['artist'] [track] # maybe fetch before add to db and addding at the same time
+    screen.destroy()
+    
     return
 
 
@@ -427,6 +502,7 @@ def fetch_data_at_open(col, lst_box, what_key: str):
     try:
         for i in data:
             lst_box.insert(0, i[what_key]) # TODO ['year']
+            #lst_box.insert(0,('{}, {}').format(i[what_key], i['year'])) # TODO ['year']
         return True
     except:
         return False
@@ -435,7 +511,7 @@ def fetch_data_at_open(col, lst_box, what_key: str):
 
 def fetch_data_cursor_select(col, parent_lst_box): 
         
-    return
+    return # return festival name
 
 
 # Plot button
@@ -450,7 +526,7 @@ mongo_plug = MongoConnect(config.mongodb_url, pwd= config.mongo_pwd)
 a = artist_list.get(1) # get 0 บนสุด
 fetch_data_at_open('festival', festival_list, 'name')
 
-
+sp = FetchSpoty(config.sptf_client_id, config.sptf_client_secret)
 
 app.mainloop()
 
