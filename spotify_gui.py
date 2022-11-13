@@ -19,9 +19,15 @@ from pprint import pprint
 #// TODO ADD artist buttun and function
     #// TODO get artist name function
     #// TODO Remove Artist key frin track array object, 
-    # TODO Get current cursor () return turn name 
-# TODO Recheck fetch features function is it return as list >> then call it at artist_confirm button
-# TODO READ Each DJ in festival when cursored at festival (fetch_data_cursor_select())
+    #// TODO Get current cursor () return turn name 
+    
+#// TODO Recheck fetch features function is it return as list >> then call it at artist_confirm butto
+#// TODO READ Each DJ in festival when cursored at festival (fetch_data_cursor_select()) 
+    #// TODO Fetch all artist in festival name
+#// TODO READ ALL SONG FEATURE WHEN ARTIST WAS SELECT
+#// TODO Delete button (artist), change to delete artist from selected festival
+#// TODO Artist click confirm() insert name 
+# TODO Duplicate artist, dont add if artist existing
 # TODO Add festival list to lower list box 
 # TODO Filter and plot
 
@@ -77,6 +83,7 @@ class FetchSpoty():
             top_tracks = {}
             #top_tracks['artist'] = artist_tracks[i]['artists'][0]['name']
             top_tracks['uri'] = artist_tracks[i]['uri']
+            top_tracks['name'] = artist_tracks[i]['name']
             if get_features:
                 top_tracks['features'] = self.fetch_features(top_tracks['uri'])
             self.top_tracks_list.append(top_tracks.copy())
@@ -241,7 +248,14 @@ class MongoConnect():
         
         return db_id
         
-    
+    def db_del_artist_from_festival(self, fes_name, artist_name):
+        
+        self.collection_params['festival'].update_one(
+            {'name': fes_name},
+            {'$pull': {'artist': {'name': artist_name}}}
+        )
+        
+        return
     def db_del(self, col, query: list):
         
         if isinstance(query, list):
@@ -250,6 +264,8 @@ class MongoConnect():
         else:
             db_id = self.collection_params[col].delete_one(query)
         print(db_id)
+    
+            
         return db_id
     
     # called when change dj uri
@@ -283,6 +299,21 @@ class MongoConnect():
     # # read all data in each collection 
     # def db_read_all_at_start():
     #     return
+    
+    # 
+    def db_read_artist_from_fes(self, fes_name) -> list:
+        # get all artist name in fesname
+        name = self.collection_params['festival'].find_one({'name': fes_name})['artist']
+        lst_artists = [d['name'] for d in name]
+        # return lsit of name
+        return lst_artists
+    
+    def db_read_track_from_artist(self, artist_name):
+        tracks = self.collection_params['artist'].find_one({'name': artist_name})['track']
+        lst_tracks = [t['name'] for t in tracks]
+        #for i in tracks:
+            
+        return lst_tracks
 
 
 
@@ -295,25 +326,58 @@ app.resizable(0,0)
 
 #### Festival List BOX ####
 
+def get_name_for_next_listbox(lst_box_name):
+    if lst_box_name == 'festival':
+        name = festival_list.get(festival_list.curselection())
+        if ',' in name:
+            name = name.split(',')[0]
+        print(name)
+    
+        # clear artist box
+        artist_list.delete(0, END)
+        # read all artist in fesname and insert it to artst box
+        artists_name = mongo_plug.db_read_artist_from_fes(name)
+        print(artists_name)
+        print(type(artists_name))
+        for i in artists_name:
+            print(i)
+            artist_list.insert(0, i)
+    elif lst_box_name == 'artist':
+        print('!!!!!!!!! Artist selected !!!!!!!!!')
+        name = artist_list.get(artist_list.curselection())
+        if ',' in name: 
+            name = name.split(',')[0]
+        print(name)
+        track_list.delete(0, END)
+        # get tracks by artist
+        tracks_name = mongo_plug.db_read_track_from_artist(name)
+        for i in tracks_name:
+            print(i)
+            track_list.insert(0, i)
+        # insert tracks to track_list
+
 festival_box = LabelFrame(app, text= 'Festival', bd=1, relief= GROOVE, labelanchor= 'n')
 festival_box.grid(row= 0, column=0)
 scrollbar = Scrollbar(festival_box, orient= 'vertical')
-festival_list = Listbox(festival_box, height=15, width=30, yscrollcommand=scrollbar.set)
+festival_list = Listbox(festival_box, height=15, width=30, yscrollcommand=scrollbar.set, exportselection= False)
 festival_list.grid(row= 0, column= 0, padx= 50, pady= 30)
 scrollbar.config(command= festival_list.yview)
 scrollbar.grid(row= 0, column= 1)
 
+# test bind for get item in list box
+festival_list.bind('<<ListboxSelect>>', lambda x: get_name_for_next_listbox('festival'))
 
 # Artist List Box
 
 artist_box = LabelFrame(app, text= 'Artist', bd=1, labelanchor= 'n')
 artist_box.grid(row= 0, column=1)
 scrollbar_artist = Scrollbar(artist_box, orient= 'vertical')
-artist_list = Listbox(artist_box, height=15, width=30, yscrollcommand=scrollbar_artist.set)
+artist_list = Listbox(artist_box, height=15, width=30, yscrollcommand=scrollbar_artist.set, exportselection= False)
 artist_list.grid(row= 0, column= 1, padx= 50, pady= 30)
 scrollbar_artist.config(command= artist_list.yview)
 scrollbar_artist.grid(row= 0, column= 2)
 
+artist_list.bind('<<ListboxSelect>>', lambda x: get_name_for_next_listbox('artist'))
 
 # Track List Box
 
@@ -337,11 +401,11 @@ scrollbar_plotting.grid(row=1, column= 1)
 # colspan=3
 
 #! #### DUMMY #####
-artist_list.insert(0, 'test artist box')
-artist_list.insert(-1, 'test artist box2') # ใช้ - 1 ไม่ได้
-artist_list.insert(0, 'test artist box3')
-artist_list.delete(0) # delete item in list box at index = 0
-#a = artist_list.get(0) # get 0 บนสุด (ซึ่งหมายถึง index)
+# artist_list.insert(0, 'test artist box')
+# artist_list.insert(-1, 'test artist box2') # ใช้ - 1 ไม่ได้
+# artist_list.insert(0, 'test artist box3')
+# artist_list.delete(0) # delete item in list box at index = 0
+# #a = artist_list.get(0) # get 0 บนสุด (ซึ่งหมายถึง index)
 
 # ! END DUMMY
 
@@ -365,7 +429,12 @@ btn_del_artist.grid(row= 1, column=2)
 #### Check box for plotting festival
 
 def plot_click(lst_box, data):
-    lst_box.insert(0, data)
+    #lst_box.insert(0, data)
+    #lst_box.get(lst_box.curselection())
+    #print('Festival List box', festival_list.get(festival_list.curselection()))
+    #print('Artist List Box', artist_list.get(artist_list.curselection()))
+    #print('-----------------------\n',festival_list.get(festival_list.grab_current()))
+    
     return
 
 #// ! 2 functions ข้างล่าง ยังแปลกๆ ไปคิดใหม่ หรือแยกฟังค์ชันไปเลย
@@ -453,13 +522,11 @@ def add_artist_click(lst_box):
     return
 
 def add_artist_comfirm(lst_box, temp_name, temp_uri, screen, notif):
-    #TODO Get festivalname from cursorselect > return index and find by index
-    
+    #// TODO Get festivalname from cursorselect > return index and find by index
     #name = temp_name.get()
     uri = temp_uri.get()
-    # GET FESTIVALNAME by cursor
-    # ! DUMMY
-    fes_name = 'newfes5'
+    # GET FESTIVALNAME by cursor 
+    fes_name = festival_list.get(festival_list.curselection()).split(',')[0]
     
     
     # fetch artist tracks
@@ -470,8 +537,8 @@ def add_artist_comfirm(lst_box, temp_name, temp_uri, screen, notif):
     # add data to db
     mongo_plug.db_add_artist(name, uri, sp.popularity, fes_name, tracks)
     
-    # ? insert ยังไงดี จะให้เป็นเมาส์คลิ้ก แล้วถึงโชว์ข้อมูล
-    #lst_box.insert(name)
+
+    lst_box.insert(0 ,name)
     
     # fetch_feature and append to db['artist'] [track] # maybe fetch before add to db and addding at the same time
     screen.destroy()
@@ -486,13 +553,23 @@ def del_click(lst_box, col: str):
     # get name from curselection that will be used as query to delete at db
     name = lst_box.get(lst_box.curselection()) # get value where cursor select
     print(name)
+    if ',' in name:
+        name = name.split(',')[0]
+    print(name)
     lst_box.delete(lst_box.curselection()) # delete item in listbox
     
     # delete in db 
-    #MongoConnect.db_del(col, query= {'name': name })
-    mongo_plug.db_del(col, query= {'name': name})
-    # use mongo var instead
-    # notif text when delete complete or not found
+    if col == 'festival':
+        mongo_plug.db_del(col, query= {'name': name})
+    
+    # TODO Delete from array of artist in festival too
+    else: # artist
+        fes_name = festival_list.get(festival_list.curselection())
+        if ',' in fes_name:
+            fes_name = fes_name.split(',')[0]
+        if col == 'artist':
+            mongo_plug.db_del_artist_from_festival(fes_name, name)
+        
     return
 
 
@@ -501,8 +578,8 @@ def fetch_data_at_open(col, lst_box, what_key: str):
     data = mongo_plug.db_read_all(col)
     try:
         for i in data:
-            lst_box.insert(0, i[what_key]) # TODO ['year']
-            #lst_box.insert(0,('{}, {}').format(i[what_key], i['year'])) # TODO ['year']
+            # lst_box.insert(0, i[what_key]) # TODO ['year']
+            lst_box.insert(0,('{}, {}').format(i[what_key], i['year'])) # TODO ['year']
         return True
     except:
         return False
