@@ -316,7 +316,6 @@ class MongoConnect():
         return lst_tracks
 
 
-
 ########### GUI ###################
 
 app = Tk()
@@ -481,7 +480,7 @@ def add_fes_confirm(lst_box, temp_name, temp_year, screen, notif):
     lst_box.insert(0, ('{}, {}'.format(name, year)))
     
     # add new festival
-    mongo_plug.db_add_festival(name, year) #<<< add dj new treshold
+    mongo_plug.db_add_festival(name, year) #<<< add dj new placeholder
 
     # notif
     #notif.config(fg='green', text= 'Add to database complete')
@@ -528,7 +527,7 @@ def add_artist_comfirm(lst_box, temp_name, temp_uri, screen, notif):
     # GET FESTIVALNAME by cursor 
     fes_name = festival_list.get(festival_list.curselection()).split(',')[0]
     
-    
+    # if artist does not have data in db yet
     # fetch artist tracks
     tracks = sp.fetch_artist_tracks(uri, get_features= True)
     pprint(tracks)
