@@ -11,8 +11,6 @@ from pprint import pprint
 # // Done ? Change Database class to be an treasholder to get values for each keys ???????????
 #// ! artist dup
 #// TODO Database design change????? how?
-# Festival{'name': , year, 'artist'}
-# Artist{uri, name, track[features]} NONEED TRACK COLLECTION
 
 #// ? Artist arrtibutes, only uri and get name by fetching, or input both name and uri
 #// ? 1 merge track collection to be an array in artist collection
@@ -27,9 +25,13 @@ from pprint import pprint
 #// TODO READ ALL SONG FEATURE WHEN ARTIST WAS SELECT
 #// TODO Delete button (artist), change to delete artist from selected festival
 #// TODO Artist click confirm() insert name 
-# TODO Duplicate artist, dont add if artist existing
-# TODO Add festival list to lower list box 
+#// TODO Duplicate artist, dont add if artist existing
+# TODO Add festival list to lower list box  
+    # TODO at fetch_all_at_open ->> insert to lower list box 
+    # TODO add or delete festival button -> insert and delete from lower list box
 # TODO Filter and plot
+    # TODO multiple selection to lower list box
+    # ? HOW TO PLOT,, find each festivals and set to dataframe
 
 # * Focus on array data, eg artist in festival, how to read all
 
@@ -77,11 +79,9 @@ class FetchSpoty():
         # artist_top_tracks return dict with key is 'tracks', which contain list of 10 tracks
         self.top_tracks_list = []
         artist_tracks = self.sp.artist_top_tracks(artist_id= artist_uri, country= 'TH')['tracks']
-        #print(artist_tracks)
-        #print(type(artist_tracks))
+
         for i, k in enumerate(artist_tracks):
             top_tracks = {}
-            #top_tracks['artist'] = artist_tracks[i]['artists'][0]['name']
             top_tracks['uri'] = artist_tracks[i]['uri']
             top_tracks['name'] = artist_tracks[i]['name']
             if get_features:
@@ -130,10 +130,8 @@ self.tracks_list.append({
                 a_pl_dict['name'] = playlist['name']
                 
                 # Fetch tracks in playlist
-                # TODO// Call fetch_tracks_from_playlist()
                 if get_features == True:
                     
-                    #a_pl_dict['tracks'] = self.fetch_tracks_in_playlist(playlist_uri = playlist['uri'])
                     a_pl_dict['tracks'] = self.fetch_tracks_in_playlist(playlist_uri = playlist['uri'], uri_only= True)
                 
                 else:
@@ -230,14 +228,22 @@ class MongoConnect():
     
     def db_add_artist(self, artist_name, artist_uri, popularity , fes_name, track: list, col1= 'artist', col2= 'festival'): 
         
-        # add new artist
-        artist_doc = {'name': artist_name, 'uri': artist_uri, 'popularity': popularity, 'track': track}
-        artist_ret = self.collection_params[col1].insert_one(artist_doc)
-        artist_id = artist_ret.inserted_id
-        print('-------------')
-        print('ID :',artist_id)
-        print(type(artist_id))
-            
+        # Check if arist existing in DB
+        query = {'name': artist_name}
+        ret = self.collection_params[col1].find_one(query)
+        if ret == None:
+            # add new artist
+            artist_doc = {'name': artist_name, 'uri': artist_uri, 'popularity': popularity, 'track': track}
+            artist_ret = self.collection_params[col1].insert_one(artist_doc)
+            artist_id = artist_ret.inserted_id
+            print('-------------')
+            print('ID :',artist_id)
+            print(type(artist_id))
+        
+        # else: get object id to refer in festival collection   
+        else:
+            print('Artist details in database already')
+            artist_id = ret['_id']
         
         # push artist id to festival
         festival_doc = {'name': artist_name, 'ref_id': artist_id}
@@ -286,8 +292,8 @@ class MongoConnect():
         data = []
         for d in self.collection_params[col].find():
             data.append(d)
-        print(data)
-        print('Data keys :', data[0].keys())
+        #print(data)
+        #print('Data keys :', data[0].keys())
         
         return data
     
@@ -490,25 +496,20 @@ def add_fes_confirm(lst_box, temp_name, temp_year, screen, notif):
     return True
 
 def add_artist_click(lst_box):
-        # vars
-    temp_name = StringVar()
-    temp_uri = StringVar()
     
+    # vars
+    temp_uri = StringVar()
     
     # show new window to get input for each values
     add_artist_screen = Toplevel(app)
     add_artist_screen.title('Adding artist to database')
     
-    #// TODO Artist add button
-    # ? จะเก็บแค่ Artist Uri หรือเก็บ Name ด้วย ถ้า getname ต้องไปเขียน function ในspoty
     # Add label
-    Label(add_artist_screen, text= 'Enter new artist name to for selected festival').grid(row=0, sticky=N, pady=10)
-    Label(add_artist_screen, text= 'Name').grid(row=1, sticky=W, pady=10)
-    Label(add_artist_screen, text= 'Uri').grid(row=2, sticky=W, pady=10)
+    Label(add_artist_screen, text= 'Enter new artist name to add to selected festival').grid(row=0, sticky=N, pady=10)
+    Label(add_artist_screen, text= 'Uri').grid(row=1, sticky=W, pady=10)
     
     # Add Entry
-    Entry(add_artist_screen, textvariable= temp_name).grid(row=1, column=0)
-    Entry(add_artist_screen, textvariable= temp_uri).grid(row=2, column=0)
+    Entry(add_artist_screen, textvariable= temp_uri).grid(row=1, column=0)
     
     # notif
     notif = Label(add_artist_screen)
@@ -516,13 +517,12 @@ def add_artist_click(lst_box):
     
     
     Button(add_artist_screen, text= 'Comfirm and Fetch Audio Features',
-           command= lambda :add_artist_comfirm(lst_box, temp_name, temp_uri, add_artist_screen, notif)).grid(row=3, sticky=N, pady=10)
+           command= lambda :add_artist_comfirm(lst_box, temp_uri, add_artist_screen, notif)).grid(row=3, sticky=N, pady=10)
 
     return
 
-def add_artist_comfirm(lst_box, temp_name, temp_uri, screen, notif):
-    #// TODO Get festivalname from cursorselect > return index and find by index
-    #name = temp_name.get()
+def add_artist_comfirm(lst_box, temp_uri, screen, notif):
+    
     uri = temp_uri.get()
     # GET FESTIVALNAME by cursor 
     fes_name = festival_list.get(festival_list.curselection()).split(',')[0]
@@ -546,9 +546,7 @@ def add_artist_comfirm(lst_box, temp_name, temp_uri, screen, notif):
 
 
 def del_click(lst_box, col: str):
-    # lst_box = variable of list box, 
-    # col = string from where button is clicked that will be param for db_collection
-    
+
     # get name from curselection that will be used as query to delete at db
     name = lst_box.get(lst_box.curselection()) # get value where cursor select
     print(name)
@@ -561,7 +559,6 @@ def del_click(lst_box, col: str):
     if col == 'festival':
         mongo_plug.db_del(col, query= {'name': name})
     
-    # TODO Delete from array of artist in festival too
     else: # artist
         fes_name = festival_list.get(festival_list.curselection())
         if ',' in fes_name:
@@ -577,7 +574,6 @@ def fetch_data_at_open(col, lst_box, what_key: str):
     data = mongo_plug.db_read_all(col)
     try:
         for i in data:
-            # lst_box.insert(0, i[what_key]) # TODO ['year']
             lst_box.insert(0,('{}, {}').format(i[what_key], i['year'])) # TODO ['year']
         return True
     except:
@@ -585,9 +581,9 @@ def fetch_data_at_open(col, lst_box, what_key: str):
 
     return
 
-def fetch_data_cursor_select(col, parent_lst_box): 
+# def fetch_data_cursor_select(col, parent_lst_box): 
         
-    return # return festival name
+#     return # return festival name
 
 
 # Plot button
