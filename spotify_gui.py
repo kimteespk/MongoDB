@@ -26,11 +26,11 @@ from pprint import pprint
 #// TODO Delete button (artist), change to delete artist from selected festival
 #// TODO Artist click confirm() insert name 
 #// TODO Duplicate artist, dont add if artist existing
-# TODO Add festival list to lower list box  
-    # TODO at fetch_all_at_open ->> insert to lower list box 
-    # TODO add or delete festival button -> insert and delete from lower list box
+#// TODO Add festival list to lower list box  
+    #// TODO at fetch_all_at_open ->> insert to lower list box 
+    #// TODO add or delete festival button -> insert and delete from lower list box
 # TODO Filter and plot
-    # TODO multiple selection to lower list box
+    #// TODO multiple selection to lower list box
     # ? HOW TO PLOT,, find each festivals and set to dataframe
 
 # * Focus on array data, eg artist in festival, how to read all
@@ -63,7 +63,6 @@ class FetchSpoty():
         for i in self.required_features:
             self.song_features[i] = self.track_featres[i]
             
-        #self.track_feature_list.append(song_features.copy())
         
         return self.song_features.copy()
         
@@ -88,7 +87,6 @@ class FetchSpoty():
                 top_tracks['features'] = self.fetch_features(top_tracks['uri'])
             self.top_tracks_list.append(top_tracks.copy())
             
-            # ! มันผิดเพราะบางทีคนร้องขชื่อแรกไม่ใช่
             
         
         return self.top_tracks_list
@@ -307,9 +305,9 @@ class MongoConnect():
     #     return
     
     # 
-    def db_read_artist_from_fes(self, fes_name) -> list:
+    def db_read_artist_from_fes(self, fes_name, year) -> list:
         # get all artist name in fesname
-        name = self.collection_params['festival'].find_one({'name': fes_name})['artist']
+        name = self.collection_params['festival'].find_one({'name': fes_name, 'year': year})['artist']
         lst_artists = [d['name'] for d in name]
         # return lsit of name
         return lst_artists
@@ -333,15 +331,16 @@ app.resizable(0,0)
 
 def get_name_for_next_listbox(lst_box_name):
     if lst_box_name == 'festival':
-        name = festival_list.get(festival_list.curselection())
-        if ',' in name:
-            name = name.split(',')[0]
+        name_year = festival_list.get(festival_list.curselection())
+        if ',' in name_year:
+            name = name_year.split(',')[0]
+            year = int(name_year.split(',')[1].strip())
         print(name)
     
         # clear artist box
         artist_list.delete(0, END)
         # read all artist in fesname and insert it to artst box
-        artists_name = mongo_plug.db_read_artist_from_fes(name)
+        artists_name = mongo_plug.db_read_artist_from_fes(name, year)
         print(artists_name)
         print(type(artists_name))
         for i in artists_name:
@@ -399,7 +398,7 @@ scrollbar_track.grid(row= 0, column= 3)
 plotting_box = LabelFrame(app, text= 'Select festival to plot', bd= 1, labelanchor= 'n')
 plotting_box.grid(row= 1, column= 0, columnspan= 2, padx= 20, pady= 40)
 scrollbar_plotting = Scrollbar(plotting_box, orient= 'vertical')
-plotting_list = Listbox(plotting_box, height= 15, width= 60, yscrollcommand= scrollbar_plotting.set)
+plotting_list = Listbox(plotting_box, height= 15, width= 60, yscrollcommand= scrollbar_plotting.set, selectmode= MULTIPLE)
 plotting_list.grid(row= 1, column=0, padx= 50, pady= 30)
 scrollbar_plotting.config(command= plotting_list.yview)
 scrollbar_plotting.grid(row=1, column= 1)
@@ -433,13 +432,18 @@ btn_del_artist.grid(row= 1, column=2)
 
 #### Check box for plotting festival
 
-def plot_click(lst_box, data):
-    #lst_box.insert(0, data)
-    #lst_box.get(lst_box.curselection())
-    #print('Festival List box', festival_list.get(festival_list.curselection()))
-    #print('Artist List Box', artist_list.get(artist_list.curselection()))
-    #print('-----------------------\n',festival_list.get(festival_list.grab_current()))
-    
+def plot_click(lst_box= plotting_list, data= ''):
+
+    fes_lst_index = lst_box.curselection()
+    for ind in fes_lst_index:
+        i = lst_box.get(ind)
+        print('--------------------------')
+        print(i)
+        name = i.split(',')[0]
+        year = i.split(',')[1]
+        print('Name :', name)
+        print('Year :', year)
+    # find data and plot
     return
 
 #// ! 2 functions ข้างล่าง ยังแปลกๆ ไปคิดใหม่ หรือแยกฟังค์ชันไปเลย
@@ -484,6 +488,9 @@ def add_fes_confirm(lst_box, temp_name, temp_year, screen, notif):
     
     # insert data(name) to list box
     lst_box.insert(0, ('{}, {}'.format(name, year)))
+    # insert to lower list box
+    plotting_list.insert(0, ('{}, {}'.format(name, year)))
+    
     
     # add new festival
     mongo_plug.db_add_festival(name, year) #<<< add dj new placeholder
@@ -548,10 +555,10 @@ def add_artist_comfirm(lst_box, temp_uri, screen, notif):
 def del_click(lst_box, col: str):
 
     # get name from curselection that will be used as query to delete at db
-    name = lst_box.get(lst_box.curselection()) # get value where cursor select
-    print(name)
-    if ',' in name:
-        name = name.split(',')[0]
+    name_year = lst_box.get(lst_box.curselection()) # get value where cursor select
+    print(name_year)
+    if ',' in name_year:
+        name = name_year.split(',')[0]
     print(name)
     lst_box.delete(lst_box.curselection()) # delete item in listbox
     
@@ -559,6 +566,11 @@ def del_click(lst_box, col: str):
     if col == 'festival':
         mongo_plug.db_del(col, query= {'name': name})
     
+        # delete from plotting list box
+        plotting_list_ind = plotting_list.get(0, END).index(name_year)
+        print(plotting_list_ind)
+        plotting_list.delete(plotting_list_ind)
+        
     else: # artist
         fes_name = festival_list.get(festival_list.curselection())
         if ',' in fes_name:
@@ -575,6 +587,8 @@ def fetch_data_at_open(col, lst_box, what_key: str):
     try:
         for i in data:
             lst_box.insert(0,('{}, {}').format(i[what_key], i['year'])) # TODO ['year']
+            # lower lst box
+            plotting_list.insert(0,('{}, {}').format(i[what_key], i['year']))
         return True
     except:
         return False
@@ -587,7 +601,8 @@ def fetch_data_at_open(col, lst_box, what_key: str):
 
 
 # Plot button
-btn_plot = Button(app, text= 'Plot', command= lambda: plot_click(festival_list, 'test button insert to fes'), width= 10, height=3)
+btn_plot = Button(app, text= 'Plot', command= lambda: plot_click(plotting_list, 'test button insert to fes'), width= 10, height=3, fg= 'green')
+#btn_plot = Button(app, text= 'Plot', command= plot_click, width= 10, height=3, fg= 'green')
 btn_plot.grid(row= 1, column= 2)
 
 
