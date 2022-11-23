@@ -2,6 +2,8 @@ import spotipy
 from tkinter import *
 import config
 import pymongo
+import pandas as pd
+import matplotlib.pyplot as plt
 from pprint import pprint
 
 #// TODO Try to plug it with MongoDB and rechack data structure
@@ -434,17 +436,22 @@ btn_del_artist = Button(artist_box, text= 'Delete', command= lambda: del_click(a
 btn_del_artist.grid(row= 1, column=2)
 
 
-#### Check box for plotting festival
-
-def plot_click(lst_box= plotting_list, data= ''):
+def plot_click(lst_box= plotting_list):
+    
+    """Plot button function, getting all selected items in plotting list box,
+    Then iterate each item and call db_read function to fetch artists and poplaraites.
+    Calculate mean of artists in festival and append it to prepared dataframe 
+    """
 
     # create dataframe
-    pop_for_df = []
+    df = pd.DataFrame(columns=['festival_name', 'festival_year', 'avg_popularity'])
     # row = fes
     # col = song_features
     
     fes_lst_index = lst_box.curselection()
     for ind in fes_lst_index:
+        # create list for append in df
+        #pop_for_df = []
         # create list for popularities
         lst_pops = []
         i = lst_box.get(ind)
@@ -465,13 +472,25 @@ def plot_click(lst_box= plotting_list, data= ''):
             print('#################')
             print(lst_pops)
             print('for pop', i , pops)
+        
+        avg_pop = sum(lst_pops)/ len(lst_pops)
         print('Check Average')
-        print('Average :',sum(lst_pops)/ len(lst_pops))
+        print('Average :',avg_pop)
         # Add average to list for df
-        pop_for_df.append(sum(lst_pops)/ len(lst_pops))
+        # pop_for_df.append(name)
+        # pop_for_df = [name, year, avg_pop].copy()
+        df.loc[len(df)] = [name, year, avg_pop].copy()
+        #pop_for_df.append(sum(lst_pops)/ len(lst_pops))
     # TODO add to df
-    print(pop_for_df)
+    print(df)
     # plot bar df
+    df.sort_values(by= ['festival_year'], inplace= True)
+    df.set_index(['festival_year', 'festival_name'], inplace= True)
+    ax = df.plot(kind= 'bar')
+    ax.set_title('Average popularites of dj which play in music festivals')
+    # plot show with multithred
+    plt.show()
+    
     return
 
 #// ! 2 functions ข้างล่าง ยังแปลกๆ ไปคิดใหม่ หรือแยกฟังค์ชันไปเลย
@@ -502,10 +521,6 @@ def add_fes_click(lst_box):   # lst_box depend on which button clicked
     Button(add_fes_screen, text= 'Comfirm', command= lambda :add_fes_confirm(lst_box, temp_name, temp_year, add_fes_screen, notif)).grid(row=3, sticky=N, pady=10)
     
     
-    # get value from each input
-    # if lst_box == festival_list:
-    #add_confirm(lst_box, data, festival_name)
-
     return
 
 def add_fes_confirm(lst_box, temp_name, temp_year, screen, notif):
@@ -626,13 +641,9 @@ def fetch_data_at_open(col, lst_box, what_key: str):
 
     return
 
-# def fetch_data_cursor_select(col, parent_lst_box): 
-        
-#     return # return festival name
-
 
 # Plot button
-btn_plot = Button(app, text= 'Plot', command= lambda: plot_click(plotting_list, 'test button insert to fes'), width= 10, height=3, fg= 'green')
+btn_plot = Button(app, text= 'Plot', command= lambda: plot_click(plotting_list), width= 10, height=3, fg= 'green')
 #btn_plot = Button(app, text= 'Plot', command= plot_click, width= 10, height=3, fg= 'green')
 btn_plot.grid(row= 1, column= 2)
 
