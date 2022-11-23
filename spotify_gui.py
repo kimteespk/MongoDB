@@ -434,6 +434,10 @@ btn_del_artist.grid(row= 1, column=2)
 
 def plot_click(lst_box= plotting_list, data= ''):
 
+    # create dataframe
+    # row = fes
+    # col = song_features
+    
     fes_lst_index = lst_box.curselection()
     for ind in fes_lst_index:
         i = lst_box.get(ind)
@@ -443,7 +447,11 @@ def plot_click(lst_box= plotting_list, data= ''):
         year = i.split(',')[1]
         print('Name :', name)
         print('Year :', year)
-    # find data and plot
+        # find data and plot
+        # call db (create new) function to read songfeatures and averaging track_features at each dj in fes
+        # return in dict k= featuresname, v= average score or any type that compatible for append to df
+        # add to df
+    # plot bar df
     return
 
 #// ! 2 functions ข้างล่าง ยังแปลกๆ ไปคิดใหม่ หรือแยกฟังค์ชันไปเลย
