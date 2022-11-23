@@ -31,15 +31,22 @@ from pprint import pprint
 #// TODO Add festival list to lower list box  
     #// TODO at fetch_all_at_open ->> insert to lower list box 
     #// TODO add or delete festival button -> insert and delete from lower list box
-# TODO Filter and plot
+# TODO// Filter and plot
     #// TODO multiple selection to lower list box
-    # ? HOW TO PLOT,, find each festivals and set to dataframe
+    #// ? HOW TO PLOT,, find each festivals and set to dataframe
+    
+# TODO Agg average audio_features for each dj then festival
+    # ? IF CAN NOT AGG IN CURRENT DATABASE STRUCTURE, CREATE NEW FUNCTION TO REDESIGN DB STRUCTURE
 
-# * Focus on array data, eg artist in festival, how to read all
+#// * Focus on array data, eg artist in festival, how to read all
 
 
 class FetchSpoty():
-    
+    """FetchSpoty Class contains methods that involed to the spotify api, using spotipy library
+    Mathods are filtering only needed data and create new structure of datas.
+    Then it will return datas that's fit in app and db term
+    Class methods will called from button and database function
+    """
     
     def __init__(self, client_id = None, client_secret = None) -> None:
         
@@ -69,7 +76,6 @@ class FetchSpoty():
         return self.song_features.copy()
         
         
-            
     def fetch_artist_tracks(self, artist_uri, get_features= bool):
         
         # get artist name and details
@@ -89,32 +95,12 @@ class FetchSpoty():
                 top_tracks['features'] = self.fetch_features(top_tracks['uri'])
             self.top_tracks_list.append(top_tracks.copy())
             
-            
-        
         return self.top_tracks_list
-    
-    
-    
-    
     
 
     
 
 ############## User's playist analytics zone ##################
-    """
-    dict key for each track
-self.tracks_list.append({
-    'name': track_name,
-    'artist': track_artist,
-    'added_date': track_added_date,
-    'uri': track_uri 
-})
-    """                   
-    """
-    DONE
-    ต้องเปลี่ยนเพื่อให้ไม่เก็บ Track details ซับซ้อน โดยที่ a_pl_dict['tracks'] เก็บแค่ uri 
-    เพื่อนำ uri ไปเสิชหา detail ใน collection['tracks'] เท่านั้น
-    """
     
     def fetch_user_playlist(self ,userid: str, get_features = True) -> list:
         "This method return a list of  playist which contained uri, name, tracks (list) as a dict keys"
@@ -137,9 +123,7 @@ self.tracks_list.append({
                 else:
                     a_pl_dict['tracks'] = []
                 
-                #print(a_pl_dict)
                 pl_list.append(a_pl_dict.copy())
-                #print(pl_list)
 
             if playlists['next']:
                 playlists = self.sp.next(playlists)
@@ -185,10 +169,12 @@ self.tracks_list.append({
     
         return self.tracks_list
         
-
+# DATABASE CLASS
 class MongoConnect():
     
-    """This class is called by button function 
+    """All about database connections are in this class methods
+    Method created to be placeholders for any CRUDs 
+    which is will called by button function in purposes
     """
     
     def __init__(self, url, pwd) -> None:
@@ -294,21 +280,10 @@ class MongoConnect():
         data = []
         for d in self.collection_params[col].find():
             data.append(d)
-        #print(data)
-        #print('Data keys :', data[0].keys())
         
         return data
     
-    # read all use in case to show all djs, all tracks feature
-    # when festival was selected
-    def db_read_specific(self, col):
-        return
 
-    # # read all data in each collection 
-    # def db_read_all_at_start():
-    #     return
-    
-    # 
     def db_read_artist_from_fes(self, fes_name, year) -> list:
         # get all artist name in fesname
         name = self.collection_params['festival'].find_one({'name': fes_name, 'year': year})['artist']
@@ -410,16 +385,7 @@ plotting_list = Listbox(plotting_box, height= 15, width= 60, yscrollcommand= scr
 plotting_list.grid(row= 1, column=0, padx= 50, pady= 30)
 scrollbar_plotting.config(command= plotting_list.yview)
 scrollbar_plotting.grid(row=1, column= 1)
-# colspan=3
 
-#! #### DUMMY #####
-# artist_list.insert(0, 'test artist box')
-# artist_list.insert(-1, 'test artist box2') # ใช้ - 1 ไม่ได้
-# artist_list.insert(0, 'test artist box3')
-# artist_list.delete(0) # delete item in list box at index = 0
-# #a = artist_list.get(0) # get 0 บนสุด (ซึ่งหมายถึง index)
-
-# ! END DUMMY
 
 #### Button ####
 # Festival add delete button
@@ -452,8 +418,6 @@ def plot_click(lst_box= plotting_list):
     
     fes_lst_index = lst_box.curselection()
     for ind in fes_lst_index:
-        # create list for append in df
-        #pop_for_df = []
         # create list for popularities
         lst_pops = []
         i = lst_box.get(ind)
@@ -479,18 +443,14 @@ def plot_click(lst_box= plotting_list):
         print('Check Average')
         print('Average :',avg_pop)
         # Add average to list for df
-        # pop_for_df.append(name)
-        # pop_for_df = [name, year, avg_pop].copy()
         df.loc[len(df)] = [name, year, avg_pop].copy()
-        #pop_for_df.append(sum(lst_pops)/ len(lst_pops))
-    # TODO add to df
+
     print(df)
     # plot bar df
     df.sort_values(by= ['festival_year'], inplace= True)
     df.set_index(['festival_year', 'festival_name'], inplace= True)
     ax = df.plot(kind= 'bar')
     ax.set_title('Average popularites of dj which play in music festivals')
-    # plot show with multithred
     plt.show()
     
     return
@@ -649,75 +609,70 @@ def fetch_data_at_open(col, lst_box, what_key: str):
     except:
         return False
 
-    return
 
 
 # Plot button
 btn_plot = Button(app, text= 'Plot', command= lambda: plot_click(plotting_list), width= 10, height=3, fg= 'green')
-#btn_plot = Button(app, text= 'Plot', command= plot_click, width= 10, height=3, fg= 'green')
 btn_plot.grid(row= 1, column= 2)
 
 
 
-###### Init process
-# connoect mongo
-mongo_plug = MongoConnect(config.mongodb_url, pwd= config.mongo_pwd)
-a = artist_list.get(1) # get 0 บนสุด
-fetch_data_at_open('festival', festival_list, 'name')
-
-sp = FetchSpoty(config.sptf_client_id, config.sptf_client_secret)
-
-app.mainloop()
 
 
 
 
 
-if __name__ == '__main__2':
-    """
-    เมื่อ cursor จิ้มที่ festival ไหน ให้ไป read DJ ในส่วนนั้น
-    เช่นกันกับ DJ เมื่อจิ้มอันไหน ให้แสดงรายชื่อเพลง
-    """
-    
-    ### DUMMY DOC ###
-    firstfes = [{'name': 'firstfes',
-                'artist': [{'uri': 'spotify:artist:0AvGycOEDZTaBFLCaiGd9S', 'name': 'dj1'}]
-            }]
-    firstartist = [{'name': 'dj1',
-                   'uri': 'spotify:artist:0AvGycOEDZTaBFLCaiGd9S'}]
-    
-    from pprint import pprint
-    
-    # charlie artist uri = 'spotify:artist:7wO5pqunGUkJCQsJohcteb
-    uri = 'spotify:track:1xddmaN7Ivc2SQ940oBskZ'
-    
-    #pluged = fetch_spoty()
-    pluged = FetchSpoty(config.sptf_client_id, config.sptf_client_secret)
-    #test = pluged.fetch_features(uri)
-    top_tracks = pluged.fetch_artist_tracks('spotify:artist:0AvGycOEDZTaBFLCaiGd9S')
-    print(top_tracks)
-    print('total tracks :',len(top_tracks))
+
+if __name__ == '__main__':
+    ###### Init process
+    # connoect mongodb
+    mongo_plug = MongoConnect(config.mongodb_url, pwd= config.mongo_pwd)
+    # fetch all festival in database
+    fetch_data_at_open('festival', festival_list, 'name')
+    # get developers account and connect to spotipy
+    sp = FetchSpoty(config.sptf_client_id, config.sptf_client_secret)
+    app.mainloop()
     
     
-    db = MongoConnect(config.mongodb_url, config.mongo_pwd)
-    # พยายามทำให้ festival ที่เขียนข้างล่างนี่เป็นตัวแปร ที่เปลี่ยนตาม หมวดของ listbox ที่คลิ้ก
-    # โดยอาจจะใช้เป็น param ว่าคลิ้ก add/del จากกล่องไหน
-    db.db_add('festival', firstfes)
-    db.db_add('artist', firstartist)
+    ### TES AND DEV CODE ###
+    # firstfes = [{'name': 'firstfes',
+    #             'artist': [{'uri': 'spotify:artist:0AvGycOEDZTaBFLCaiGd9S', 'name': 'dj1'}]
+    #         }]
+    # firstartist = [{'name': 'dj1',
+    #                'uri': 'spotify:artist:0AvGycOEDZTaBFLCaiGd9S'}]
+    
+    # from pprint import pprint
+    
+    # # charlie artist uri = 'spotify:artist:7wO5pqunGUkJCQsJohcteb
+    # uri = 'spotify:track:1xddmaN7Ivc2SQ940oBskZ'
+    
+    # #pluged = fetch_spoty()
+    # pluged = FetchSpoty(config.sptf_client_id, config.sptf_client_secret)
+    # #test = pluged.fetch_features(uri)
+    # top_tracks = pluged.fetch_artist_tracks('spotify:artist:0AvGycOEDZTaBFLCaiGd9S')
+    # print(top_tracks)
+    # print('total tracks :',len(top_tracks))
+    
+    
+    # db = MongoConnect(config.mongodb_url, config.mongo_pwd)
+    # # พยายามทำให้ festival ที่เขียนข้างล่างนี่เป็นตัวแปร ที่เปลี่ยนตาม หมวดของ listbox ที่คลิ้ก
+    # # โดยอาจจะใช้เป็น param ว่าคลิ้ก add/del จากกล่องไหน
+    # db.db_add('festival', firstfes)
+    # db.db_add('artist', firstartist)
 
     
-    features = []
+    # features = []
     
-    ####  Use this loop to create data at DB #####
-    for i in range(len(top_tracks)):
-        print('-----------------')
-        feature = pluged.fetch_features(top_tracks[i]['uri'])[0]
-        print('features ', feature)
-        features.append(feature)
+    # ####  Use this loop to create data at DB #####
+    # for i in range(len(top_tracks)):
+    #     print('-----------------')
+    #     feature = pluged.fetch_features(top_tracks[i]['uri'])[0]
+    #     print('features ', feature)
+    #     features.append(feature)
         
-    db.db_add('track', features)
+    # db.db_add('track', features)
         
-    # [features.append(pluged.fetch_features(top_tracks[x]['uri'])) for x in range(len(top_tracks)) ]
-    # pprint(features)
-    # pprint(features[0])        
-    # pprint(features[0][0])        
+    # # [features.append(pluged.fetch_features(top_tracks[x]['uri'])) for x in range(len(top_tracks)) ]
+    # # pprint(features)
+    # # pprint(features[0])        
+    # # pprint(features[0][0])        
