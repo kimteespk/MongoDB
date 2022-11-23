@@ -224,7 +224,7 @@ class MongoConnect():
         return
     
     
-    def db_add_artist(self, artist_name, artist_uri, popularity , fes_name, track: list, col1= 'artist', col2= 'festival'): 
+    def db_add_artist(self, artist_name, artist_uri, popularity , fes_name, fes_year, track: list, col1= 'artist', col2= 'festival'): 
         
         # Check if arist existing in DB
         query = {'name': artist_name}
@@ -246,7 +246,7 @@ class MongoConnect():
         # push artist id to festival
         festival_doc = {'name': artist_name, 'ref_id': artist_id}
         db_id = self.collection_params[col2].update_one(
-            {'name': fes_name},
+            {'name': fes_name, 'year': fes_year},
             {'$push': {'artist': festival_doc}}
         )
         
@@ -318,6 +318,10 @@ class MongoConnect():
         #for i in tracks:
             
         return lst_tracks
+    
+    def db_read_artist_popularity(self, artist_name) -> int:
+        pops = self.collection_params['artist'].find_one({'name': artist_name})['popularity']
+        return pops
 
 
 ########### GUI ###################
@@ -435,22 +439,38 @@ btn_del_artist.grid(row= 1, column=2)
 def plot_click(lst_box= plotting_list, data= ''):
 
     # create dataframe
+    pop_for_df = []
     # row = fes
     # col = song_features
     
     fes_lst_index = lst_box.curselection()
     for ind in fes_lst_index:
+        # create list for popularities
+        lst_pops = []
         i = lst_box.get(ind)
         print('--------------------------')
         print(i)
         name = i.split(',')[0]
-        year = i.split(',')[1]
+        year = int(i.split(',')[1].strip())
         print('Name :', name)
         print('Year :', year)
+        
         # find data and plot
-        # call db (create new) function to read songfeatures and averaging track_features at each dj in fes
-        # return in dict k= featuresname, v= average score or any type that compatible for append to df
-        # add to df
+        # get artist who play at festival
+        lst_artists = mongo_plug.db_read_artist_from_fes(name, year)
+        #loop throgh list of artist and get popularities
+        for i in lst_artists:
+            pops = mongo_plug.db_read_artist_popularity(i)
+            lst_pops.append(pops)
+            print('#################')
+            print(lst_pops)
+            print('for pop', i , pops)
+        print('Check Average')
+        print('Average :',sum(lst_pops)/ len(lst_pops))
+        # Add average to list for df
+        pop_for_df.append(sum(lst_pops)/ len(lst_pops))
+    # TODO add to df
+    print(pop_for_df)
     # plot bar df
     return
 
@@ -540,8 +560,9 @@ def add_artist_comfirm(lst_box, temp_uri, screen, notif):
     
     uri = temp_uri.get()
     # GET FESTIVALNAME by cursor 
-    fes_name = festival_list.get(festival_list.curselection()).split(',')[0]
-    
+    fes_get = festival_list.get(festival_list.curselection()).split(',')
+    fes_name = fes_get[0]
+    fes_year = int(fes_get[1].strip())
     # if artist does not have data in db yet
     # fetch artist tracks
     tracks = sp.fetch_artist_tracks(uri, get_features= True)
@@ -549,7 +570,7 @@ def add_artist_comfirm(lst_box, temp_uri, screen, notif):
     name = sp.artist_name # get name from spotify
     pprint(name)
     # add data to db
-    mongo_plug.db_add_artist(name, uri, sp.popularity, fes_name, tracks)
+    mongo_plug.db_add_artist(name, uri, sp.popularity, fes_name, fes_year, tracks)
     
 
     lst_box.insert(0 ,name)
@@ -567,6 +588,8 @@ def del_click(lst_box, col: str):
     print(name_year)
     if ',' in name_year:
         name = name_year.split(',')[0]
+    else:
+        name = name_year
     print(name)
     lst_box.delete(lst_box.curselection()) # delete item in listbox
     
