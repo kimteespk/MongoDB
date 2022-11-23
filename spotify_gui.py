@@ -227,7 +227,9 @@ class MongoConnect():
     
     
     def db_add_artist(self, artist_name, artist_uri, popularity , fes_name, fes_year, track: list, col1= 'artist', col2= 'festival'): 
-        
+        """function to add artist to db, if artist already exist in db which mean
+        they were in others festival, This function will not fetch its details 
+        but add ref_id to artist instead """
         # Check if arist existing in DB
         query = {'name': artist_name}
         ret = self.collection_params[col1].find_one(query)
@@ -574,21 +576,29 @@ def add_artist_click(lst_box):
 def add_artist_comfirm(lst_box, temp_uri, screen, notif):
     
     uri = temp_uri.get()
+    if ',' in uri:
+        uri = uri.split(',')
+
+
     # GET FESTIVALNAME by cursor 
     fes_get = festival_list.get(festival_list.curselection()).split(',')
     fes_name = fes_get[0]
     fes_year = int(fes_get[1].strip())
-    # if artist does not have data in db yet
-    # fetch artist tracks
-    tracks = sp.fetch_artist_tracks(uri, get_features= True)
-    pprint(tracks)
-    name = sp.artist_name # get name from spotify
-    pprint(name)
-    # add data to db
-    mongo_plug.db_add_artist(name, uri, sp.popularity, fes_name, fes_year, tracks)
+    def inside_add_artist(uri):
+        # fetch artist tracks
+        tracks = sp.fetch_artist_tracks(uri, get_features= True)
+        pprint(tracks)
+        name = sp.artist_name # get name from spotify
+        pprint(name)
+        # add data to db
+        mongo_plug.db_add_artist(name, uri, sp.popularity, fes_name, fes_year, tracks)
+        lst_box.insert(0 ,name)
     
-
-    lst_box.insert(0 ,name)
+    if isinstance(uri, list):
+        for i in uri:
+            inside_add_artist(i.replace(' ', ''))
+    else:
+        inside_add_artist(uri)
     
     # fetch_feature and append to db['artist'] [track] # maybe fetch before add to db and addding at the same time
     screen.destroy()
