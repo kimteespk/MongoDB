@@ -35,12 +35,9 @@ from pprint import pprint
     #// TODO multiple selection to lower list box
     #// ? HOW TO PLOT,, find each festivals and set to dataframe
     
-# TODO Agg average audio_features for each dj then festival
-    # ? IF CAN NOT AGG IN CURRENT DATABASE STRUCTURE, CREATE NEW FUNCTION TO REDESIGN DB STRUCTURE
-# * เขียน function ใหม่ในตอน fetch_track ให้มันหาค่า average ของ features ทั้งหมดออกมา
-# * เสร็จแล้ว เขียน avg_[features]: value ลงใน db เหมือน popuritiy (ทำในfunction เดียวกับตอน popularity เลย)
-# * โดยใช้ตัวแปรในรูปแบบ avg_dance = SpotyClass.avg_dance <--- Get arrtibutes มันมา 
-#// * Focus on array data, eg artist in festival, how to read all
+#// TODO Agg average audio_features for each dj then festival
+    #// ? IF CAN NOT AGG IN CURRENT DATABASE STRUCTURE, CREATE NEW FUNCTION TO REDESIGN DB STRUCTURE
+#// * เขียน function ใหม่ในตอน fetch_track ให้มันหาค่า average ของ features ทั้งหมดออกมา
 
 
 class FetchSpoty():
@@ -308,7 +305,9 @@ class MongoConnect():
         data = self.collection_params['artist'].find_one({'name': artist_name})['track']
         return data
     
-    # def db_read_dj_data(self, artist_name):
+    def db_read_track_features(self, track_name):
+        tracks = self.collection_params['artist'].find_one()
+        return
 
 
 ########### GUI ###################
@@ -322,6 +321,9 @@ app.resizable(0,0)
 
 def get_name_for_next_listbox(lst_box_name):
     if lst_box_name == 'festival':
+        # activate add artist button
+        btn_add_artist['state'] = 'normal'
+        btn_del_fes['state'] = 'normal'
         name_year = festival_list.get(festival_list.curselection())
         if ',' in name_year:
             name = name_year.split(',')[0]
@@ -338,6 +340,8 @@ def get_name_for_next_listbox(lst_box_name):
             print(i)
             artist_list.insert(0, i)
     elif lst_box_name == 'artist':
+        # activate delete artist buttn
+        btn_del_artist['state'] = 'normal'
         print('!!!!!!!!! Artist selected !!!!!!!!!')
         name = artist_list.get(artist_list.curselection())
         if ',' in name: 
@@ -384,6 +388,11 @@ track_list.grid(row= 0, column= 2, padx= 50, pady= 30)
 scrollbar_track.config(command= track_list.yview)
 scrollbar_track.grid(row= 0, column= 3)
 
+def plot_track(trackname):
+    
+    return
+
+track_list.bind('<Double-Button>', lambda x: plot_track(track_list.get(track_list.curselection())))
 
 # Festival to plot list box
 plotting_box = LabelFrame(app, text= 'Select festival to plot', bd= 1, labelanchor= 'n')
@@ -402,7 +411,7 @@ btn_add_fes.grid(row= 1, column=0)
 
 btn_del_fes = Button(festival_box, text= 'Delete', command= lambda: del_click(festival_list, col= 'festival'))
 btn_del_fes.grid(row= 1, column=1)
-
+btn_del_fes['state'] = 'disable'
 
 # Artist Add Del Button
 btn_add_artist = Button(artist_box, text= 'Add', command= lambda: add_artist_click(artist_list))
@@ -410,7 +419,9 @@ btn_add_artist.grid(row= 1, column=1)
 
 btn_del_artist = Button(artist_box, text= 'Delete', command= lambda: del_click(artist_list, col= 'artist'))
 btn_del_artist.grid(row= 1, column=2)
-
+# disable artist button, activate at bind finction
+btn_add_artist['state'] = 'disable'
+btn_del_artist['state'] = 'disable'
 
 def plot_click(lst_box= plotting_list):
     
