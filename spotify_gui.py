@@ -37,7 +37,9 @@ from pprint import pprint
     
 # TODO Agg average audio_features for each dj then festival
     # ? IF CAN NOT AGG IN CURRENT DATABASE STRUCTURE, CREATE NEW FUNCTION TO REDESIGN DB STRUCTURE
-
+# * เขียน function ใหม่ในตอน fetch_track ให้มันหาค่า average ของ features ทั้งหมดออกมา
+# * เสร็จแล้ว เขียน avg_[features]: value ลงใน db เหมือน popuritiy (ทำในfunction เดียวกับตอน popularity เลย)
+# * โดยใช้ตัวแปรในรูปแบบ avg_dance = SpotyClass.avg_dance <--- Get arrtibutes มันมา 
 #// * Focus on array data, eg artist in festival, how to read all
 
 
