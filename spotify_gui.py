@@ -303,6 +303,12 @@ class MongoConnect():
     def db_read_artist_popularity(self, artist_name) -> int:
         pops = self.collection_params['artist'].find_one({'name': artist_name})['popularity']
         return pops
+    
+    def db_read_track_list(self, artist_name):
+        data = self.collection_params['artist'].find_one({'name': artist_name})['track']
+        return data
+    
+    # def db_read_dj_data(self, artist_name):
 
 
 ########### GUI ###################
@@ -414,9 +420,13 @@ def plot_click(lst_box= plotting_list):
     """
 
     # create dataframe
-    df = pd.DataFrame(columns=['festival_name', 'festival_year', 'avg_popularity'])
-    # row = fes
-    # col = song_features
+#    df = pd.DataFrame(columns=['festival_name', 'festival_year', 'avg_popularity', 
+#                               'danceability', 'energy', 'loudness', 'speechiness', 'acousticness',
+#                               'instrumentalness', 'liveness', 'valence', 'tempo'])
+    df = pd.DataFrame(columns=['festival_name', 'festival_year', 'avg_popularity', 
+                               'danceability', 'energy', 'speechiness', 'acousticness',
+                               'instrumentalness', 'liveness', 'valence', 'tempo'])
+    
     
     fes_lst_index = lst_box.curselection()
     for ind in fes_lst_index:
@@ -441,21 +451,51 @@ def plot_click(lst_box= plotting_list):
             print(lst_pops)
             print('for pop', i , pops)
         
-        avg_pop = sum(lst_pops)/ len(lst_pops)
+        avg_pop = (sum(lst_pops)/ len(lst_pops))/100
         print('Check Average')
         print('Average :',avg_pop)
+        
+        lst_for_df = [name, year, avg_pop]
+        # cal average features
+        for i in cal_average_to_plot(lst_artists):
+            lst_for_df.append(i)
+        
         # Add average to list for df
-        df.loc[len(df)] = [name, year, avg_pop].copy()
+        # df.loc[len(df)] = [name, year, avg_pop].copy()
+        print(df)
+        print(lst_for_df)
+        df.loc[len(df)] = lst_for_df
 
     print(df)
     # plot bar df
     df.sort_values(by= ['festival_year'], inplace= True)
     df.set_index(['festival_year', 'festival_name'], inplace= True)
     ax = df.plot(kind= 'bar')
-    ax.set_title('Average popularites of dj which play in music festivals')
+    ax.set_title('Average Audio Features of top tracks from dj which play in each music festivals')
     plt.show()
     
     return
+
+def cal_average_to_plot(dj_name_list):
+    
+    # dct_lst = {'danceability': [], 'energy': [] , 'loudness': [], 'speechiness': [], 'acousticness': [], 'instrumentalness': [], 'liveness': [], 'valence': [], 'tempo': []}
+    dct_lst = {'danceability': [], 'energy': [] , 'speechiness': [], 'acousticness': [], 'instrumentalness': [], 'liveness': [], 'valence': [], 'tempo': []}
+    avg_lst = []
+    for i in dj_name_list:
+        track_list = mongo_plug.db_read_track_list(i)
+        for track in track_list:
+            for k, v in track['features'].items():
+                if k != 'loudness':
+                    dct_lst[k].append(v)
+    
+    for k in dct_lst.keys():
+        if k != 'loudness':
+            avg = sum(dct_lst[k]) / len(dct_lst[k])
+            if k == 'tempo':
+                avg = avg/100
+            avg_lst.append(avg)
+        
+    return avg_lst
 
 #// ! 2 functions ข้างล่าง ยังแปลกๆ ไปคิดใหม่ หรือแยกฟังค์ชันไปเลย
 def add_fes_click(lst_box):   # lst_box depend on which button clicked
