@@ -23,11 +23,22 @@ Fetching spotify audio features for each music festival and collect in MongoDB
 - ทุกขั้นตอนที่ใช้งานปุ่มใน GUI จะเชื่อมต่อกับ MongoDB ทั้งหมด
 - การแสดงผลข้อมูลใน GUI จะมาจากการ Read ทั้งหมด
  
+ # ลอง Plot ดู Features ของแต่ละเพลง ผ่านการ Double Click ที่เพลงที่ต้องการ
+ ![image](https://user-images.githubusercontent.com/84601005/204041288-e9024818-2147-4909-a4fa-2d3973f11ee5.png)
+
  
-TODO 
-- แปะรูป GIF การทำงานของ GUI
+ # Plot ดู Audio Features เฉลี่ยของ Music Festivals เพื่อเปรียบเทียบ
+ ![image](https://user-images.githubusercontent.com/84601005/204041017-2bfb2d15-aee5-479f-b5ce-3a47da975211.png)
+
+ # MongoDB
+ - ส่วนของ Festival จะเก็บไว้ใน Collection ชื่อ Festival และจะมี Array ที่เก็บรายชื่อศิลปินทั้งหมดที่เล่นในงาน และ reference keys เพื่อเข้าถึง collection ที่เก็บ ข้อมูลของศิลปิน
+ 
+ 
+ ![image](https://user-images.githubusercontent.com/84601005/204041564-50fb7195-bc8d-4c48-b2bb-165597400d92.png)
+
+- ส่วนของ Artist จะอีก Collection หนึ่ง ซึ่งจะเก็บในรูปของ 1 ศิลปิน 1 Document, และใน Document จะมี array ที่เก็บ รายชื่อเพลง 10อันดับ ของศิลปิน และแต่ละเพลงก็จะเก็บ Audio Features ของเพลงนั้นๆ ไว้
+
+![image](https://user-images.githubusercontent.com/84601005/204041606-2afa7094-2cc7-4fef-8d3b-a901cba85910.png)
 
 
-
-- แปะรูป Database(Collection and Document) Design
 
