@@ -291,6 +291,8 @@ class MongoConnect():
         return lst_artists
     
     def db_read_track_from_artist(self, artist_name):
+        # set self. artist_name to use when read track call
+        self.current_artist_name = artist_name
         tracks = self.collection_params['artist'].find_one({'name': artist_name})['track']
         lst_tracks = [t['name'] for t in tracks]
         #for i in tracks:
@@ -305,9 +307,15 @@ class MongoConnect():
         data = self.collection_params['artist'].find_one({'name': artist_name})['track']
         return data
     
-    def db_read_track_features(self, track_name):
-        tracks = self.collection_params['artist'].find_one()
-        return
+    def db_read_track_features(self, track_name) -> dict:
+        tracks = self.collection_params['artist'].find_one({'name': self.current_artist_name})['track']
+        for track in tracks:
+            if track['name'] == track_name:
+                del track['features']['loudness']
+                track['features']['tempo'] = track['features']['tempo'] / 100
+                return track['features']
+                
+        return None
 
 
 ########### GUI ###################
@@ -388,7 +396,47 @@ track_list.grid(row= 0, column= 2, padx= 50, pady= 30)
 scrollbar_track.config(command= track_list.yview)
 scrollbar_track.grid(row= 0, column= 3)
 
+import seaborn as sns
+import numpy as np
+import matplotlib as mp
+
 def plot_track(trackname):
+    """ plot audio features for selected track """
+    # get data from db
+    track_dict_for_plot = mongo_plug.db_read_track_features(trackname)
+    # set gradient color map
+    keys = list(track_dict_for_plot.keys())
+    vals = [(track_dict_for_plot[k]) for k in keys]    
+    likeability_scores = np.array(vals)
+    data_normalizer = mp.colors.Normalize()
+    color_map = mp.colors.LinearSegmentedColormap(
+        "my_map",
+        {
+            "red": [(0, 1.0, 1.0),
+                    (1.0, .5, .5)],
+            "green": [(0, 0.5, 0.5),
+                      (1.0, 0, 0)],
+            "blue": [(0, 0.50, 0.5),
+                     (1.0, 0, 0)]
+        }
+    )
+
+    plt.bar(keys, vals, color= color_map(data_normalizer(likeability_scores)))
+    # plt.bar(*zip(*track_dict_for_plot.items()), color= color_map(data_normalizer(likeability_scores)))
+    plt.xticks(rotation= 40)
+    plt.title('{} by {}'.format(trackname, mongo_plug.current_artist_name))
+    plt.show()
+    
+    # sns plot
+    # keys = list(track_dict_for_plot.keys())
+    # vals = [(track_dict_for_plot[k]) for k in keys]
+    # sns.barplot(x= keys, y= vals, palette='Blues_d')
+    
+    # #plt.xticks(rotation= 40)
+    # plt.title('{} by {}'.format(trackname, mongo_plug.current_artist_name))
+    # plt.show()
+    
+
     
     return
 
