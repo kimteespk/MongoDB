@@ -245,10 +245,10 @@ class MongoConnect():
         
         return db_id
         
-    def db_del_artist_from_festival(self, fes_name, artist_name):
+    def db_del_artist_from_festival(self, fes_name, artist_name, fes_year):
         
         self.collection_params['festival'].update_one(
-            {'name': fes_name},
+            {'name': fes_name, 'year': int(fes_year)},
             {'$pull': {'artist': {'name': artist_name}}}
         )
         
@@ -678,6 +678,7 @@ def del_click(lst_box, col: str):
     print(name_year)
     if ',' in name_year:
         name = name_year.split(',')[0]
+        year = name_year.split(',')[1].strip()
     else:
         name = name_year
     print(name)
@@ -685,7 +686,7 @@ def del_click(lst_box, col: str):
     
     # delete in db 
     if col == 'festival':
-        mongo_plug.db_del(col, query= {'name': name})
+        mongo_plug.db_del(col, query= {'name': name, 'year': int(year)})
     
         # delete from plotting list box
         plotting_list_ind = plotting_list.get(0, END).index(name_year)
@@ -695,9 +696,10 @@ def del_click(lst_box, col: str):
     else: # artist
         fes_name = festival_list.get(festival_list.curselection())
         if ',' in fes_name:
-            fes_name = fes_name.split(',')[0]
+            fes_name_splited = fes_name.split(',')[0]
+            fes_year_splited = int((fes_name.split(',')[1]).strip())
         if col == 'artist':
-            mongo_plug.db_del_artist_from_festival(fes_name, name)
+            mongo_plug.db_del_artist_from_festival(fes_name_splited, name, fes_year= fes_year_splited)
         
     return
 
