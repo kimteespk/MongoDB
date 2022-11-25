@@ -4,6 +4,10 @@ import config
 import pymongo
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib as mp
+
+# dev libs
 from pprint import pprint
 
 #// TODO Try to plug it with MongoDB and rechack data structure
@@ -396,14 +400,15 @@ track_list.grid(row= 0, column= 2, padx= 50, pady= 30)
 scrollbar_track.config(command= track_list.yview)
 scrollbar_track.grid(row= 0, column= 3)
 
-import seaborn as sns
-import numpy as np
-import matplotlib as mp
+
 
 def plot_track(trackname):
     """ plot audio features for selected track """
+    
     # get data from db
     track_dict_for_plot = mongo_plug.db_read_track_features(trackname)
+    # try to del tempo
+    del track_dict_for_plot['tempo']
     # set gradient color map
     keys = list(track_dict_for_plot.keys())
     vals = [(track_dict_for_plot[k]) for k in keys]    
@@ -530,7 +535,7 @@ def plot_click(lst_box= plotting_list):
     df.sort_values(by= ['festival_year'], inplace= True)
     df.set_index(['festival_year', 'festival_name'], inplace= True)
     ax = df.plot(kind= 'bar')
-    ax.set_title('Average Audio Features of top tracks from dj which play in each music festivals')
+    ax.set_title('Festivals compare')
     plt.show()
     
     return
@@ -661,7 +666,6 @@ def add_artist_comfirm(lst_box, temp_uri, screen, notif):
     else:
         inside_add_artist(uri)
     
-    # fetch_feature and append to db['artist'] [track] # maybe fetch before add to db and addding at the same time
     screen.destroy()
     
     return
