@@ -1,4 +1,4 @@
-# Music Festival Trends by Spotify (Using Spotipy and MongoDB)
+# Music Festival Trends from Spotify (Using Spotipy and MongoDB)
 Application สำหรับดูเทรน และความแตกต่างระหว่างงาน Music Festival ต่างๆ โดยการใช้งานจะมีขั้นตอน
 
 ![image](https://user-images.githubusercontent.com/84601005/203669306-5f0234a2-fdd7-4810-983a-25a83b68b28c.png)
@@ -40,5 +40,6 @@ Fetching spotify audio features for each music festival and collect in MongoDB
 
 ![image](https://user-images.githubusercontent.com/84601005/204041606-2afa7094-2cc7-4fef-8d3b-a901cba85910.png)
 
-
+# จุดบกพร่อง
+- ข้อมูลที่เก็บใน MongoDB มีลักษณะเป็น Nested หลายชั้นมากเกินไป และทำให้ Aggregate ได้ยาก
 
